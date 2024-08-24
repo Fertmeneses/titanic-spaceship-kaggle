@@ -1,0 +1,247 @@
+Spaceship Titanic - NOTES about kagglers' notebooks
+
+========= ========= =========
+========= ========= =========
+========= ========= =========
+
+[Samuel Cortinhas] Spaceship Titanic: A complete guide
+https://www.kaggle.com/code/samuelcortinhas/spaceship-titanic-a-complete-guide
+
+*** GENERAL ***
+
+* Very simple style, straight to the point.
+
+* Most common frequency = Mode!
+
+* Studies Target (Transported) distribution: 50%/50%:
+
+"""
+# Figure size
+plt.figure(figsize=(6,6))
+
+# Pie plot
+train['Transported'].value_counts().plot.pie(explode=[0.1,0.1], autopct='%1.1f%%', shadow=True, textprops={'fontsize':16}).set_title("Target distribution")
+"""
+
+"The target is highly balanced, so we luckily don't have to consider techniques like under/over-sampling."
+
+* Their plots are easier to visualize: number of Transported instead of rates. Consider that!
+
+* Cabin: P is for Port, S for Starboard!
+
+*** FEATURE ENGINEERING ***
+
+* They drop VIP!'
+"VIP does not appear to be a useful feature; the target split is more or less equal."
+"We might consider dropping the VIP column to prevent overfitting."
+
+* Age status
+They bin ages separating <18.
+
+* Expenditure
+- Total expenses feature.
+- Categorical No-expenses feature.
+
+* PassengerID
+- Categorical Solo (group size==1) feature.
+
+* Name
+- Extract Surname, which is useful for correcting missing values.
+
+*** CORRECT MISSING VALUES ***
+
+
+* State missing values and percentage of missing values in combined datasets.
+
+
+** HomePlanet **
+
+- Univoquely related to Group number (PassengerID).
+Using this approach, many NaN values can be filled with 100% confidence (but not all)
+
+- HomePlanet and CabinDeck are highly correlated, they plot a helpful double-entry table:
+"""
+# Joint distribution of CabinDeck and HomePlanet
+CDHP_gb=data.groupby(['Cabin_deck','HomePlanet'])['HomePlanet'].size().unstack().fillna(0)
+
+# Heatmap of missing values
+plt.figure(figsize=(10,4))
+sns.heatmap(CDHP_gb.T, annot=True, fmt='g', cmap='coolwarm')
+"""
+
+- Univoquely correlated to Surname. 
+
+
+** Cabin side (P/S)**
+
+- Univoquely correlated with Group number
+
+
+** Cabin number **
+
+- Linearly correlated with Group number, interesting method!!
+"""
+# Scatterplot
+plt.figure(figsize=(10,4))
+sns.scatterplot(x=data['Cabin_number'], y=data['Group'], c=LabelEncoder().fit_transform(data.loc[~data['Cabin_number'].isna(),'Cabin_deck']), cmap='tab10')
+plt.title('Cabin_number vs group coloured by group')
+"""
+
+
+** CryoSleep **
+
+- Highly correlated with Total expenses: Expenses>0 means CryoSleep=False.
+
+
+** Total expenses (and expenses) **
+
+- Under 12 do not expend.
+
+
+*** PREPROCESSING ***
+
+* Drop qualitative/redundant/collinear/high cardinality features:
+'PassengerId', 'Group', 'Group_size', 'Age_group', 'Cabin_number'
+
+* Log transform on expenses-features is part of preprocessing rather than feature engineering:
+"""
+# Apply log transform
+for col in ['RoomService','FoodCourt','ShoppingMall','Spa','VRDeck','Expenditure']:
+    X[col]=np.log(1+X[col])
+    X_test[col]=np.log(1+X_test[col])
+"""
+
+* Encoding and Scaling:
+"We will use column transformers to be more professional. It's also good practice."
+"""
+# Indentify numerical and categorical columns
+numerical_cols = [cname for cname in X.columns if X[cname].dtype in ['int64', 'float64']]
+categorical_cols = [cname for cname in X.columns if X[cname].dtype == "object"]
+
+# Scale numerical data to have mean=0 and variance=1
+numerical_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+
+# One-hot encode categorical data
+categorical_transformer = Pipeline(steps=[('onehot', OneHotEncoder(drop='if_binary', handle_unknown='ignore',sparse=False))])
+
+# Combine preprocessing
+ct = ColumnTransformer(
+    transformers=[
+        ('num', numerical_transformer, numerical_cols),
+        ('cat', categorical_transformer, categorical_cols)],
+        remainder='passthrough')
+
+# Apply preprocessing
+X = ct.fit_transform(X)
+X_test = ct.transform(X_test)
+
+# Print new shape
+print('Training set shape:', X.shape)
+"""
+
+
+*** MACHINE LEARNING MODELS ***
+
+Models and grid search using a validation dataset:
+"""
+# Classifiers
+classifiers = {
+    "LogisticRegression" : LogisticRegression(random_state=0),
+    "KNN" : KNeighborsClassifier(),
+    "SVC" : SVC(random_state=0, probability=True),
+    "RandomForest" : RandomForestClassifier(random_state=0),
+    #"XGBoost" : XGBClassifier(random_state=0, use_label_encoder=False, eval_metric='logloss'), # XGBoost takes too long
+    "LGBM" : LGBMClassifier(random_state=0),
+    "CatBoost" : CatBoostClassifier(random_state=0, verbose=False),
+    "NaiveBayes": GaussianNB()
+}
+
+# Grids for grid search
+LR_grid = {'penalty': ['l1','l2'],
+           'C': [0.25, 0.5, 0.75, 1, 1.25, 1.5],
+           'max_iter': [50, 100, 150]}
+
+KNN_grid = {'n_neighbors': [3, 5, 7, 9],
+            'p': [1, 2]}
+
+SVC_grid = {'C': [0.25, 0.5, 0.75, 1, 1.25, 1.5],
+            'kernel': ['linear', 'rbf'],
+            'gamma': ['scale', 'auto']}
+
+RF_grid = {'n_estimators': [50, 100, 150, 200, 250, 300],
+        'max_depth': [4, 6, 8, 10, 12]}
+
+boosted_grid = {'n_estimators': [50, 100, 150, 200],
+        'max_depth': [4, 8, 12],
+        'learning_rate': [0.05, 0.1, 0.15]}
+
+NB_grid={'var_smoothing': [1e-10, 1e-9, 1e-8, 1e-7]}
+
+# Dictionary of all grids
+grid = {
+    "LogisticRegression" : LR_grid,
+    "KNN" : KNN_grid,
+    "SVC" : SVC_grid,
+    "RandomForest" : RF_grid,
+    "XGBoost" : boosted_grid,
+    "LGBM" : boosted_grid,
+    "CatBoost" : boosted_grid,
+    "NaiveBayes": NB_grid
+}
+
+# Grid search:
+i=0
+clf_best_params=classifiers.copy()
+valid_scores=pd.DataFrame({'Classifer':classifiers.keys(), 'Validation accuracy': np.zeros(len(classifiers)), 'Training time': np.zeros(len(classifiers))})
+for key, classifier in classifiers.items():
+    start = time.time()
+    clf = GridSearchCV(estimator=classifier, param_grid=grid[key], n_jobs=-1, cv=None)
+
+    # Train and score
+    clf.fit(X_train, y_train)
+    valid_scores.iloc[i,1]=clf.score(X_valid, y_valid)
+
+    # Save trained model
+    clf_best_params[key]=clf.best_params_
+    
+    # Print iteration and training time
+    stop = time.time()
+    valid_scores.iloc[i,2]=np.round((stop - start)/60, 2)
+    
+    print('Model:', key)
+    print('Training time (mins):', valid_scores.iloc[i,2])
+    print('')
+    i+=1
+"""
+
+* Look at the probabilities distribution:
+"""
+plt.figure(figsize=(10,4))
+sns.histplot(preds, binwidth=0.01, kde=True)
+plt.title('Predicted probabilities')
+plt.xlabel('Probability')
+"""
+
+* Study Transported distribution for predictions:
+"""
+# Sample submission (to get right format)
+sub=pd.read_csv('../input/spaceship-titanic/sample_submission.csv')
+
+# Add predictions
+sub['Transported']=preds_tuned
+
+# Replace 0 to False and 1 to True
+sub=sub.replace({0:False, 1:True})
+
+# Prediction distribution
+plt.figure(figsize=(6,6))
+sub['Transported'].value_counts().plot.pie(explode=[0.1,0.1], autopct='%1.1f%%', shadow=True, textprops={'fontsize':16}).set_title("Prediction distribution")
+"""
+
+******* SCORE *******
+
+0.80874
+
+========= ========= =========
+========= ========= =========
+========= ========= =========
