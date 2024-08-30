@@ -1,0 +1,163 @@
+Spaceship Titanic - NOTES about kagglers' notebooks
+
+========= ========= =========
+========= ========= =========
+========= ========= =========
+
+[Sanskar Hasija] Spaceship Titanic -EDA + 27 different models
+https://www.kaggle.com/code/odins0n/spaceship-titanic-eda-27-different-models/notebook
+
+*** GENERAL ***
+
+* Simple work, no feature engineering, minimal data analysis and exploring ML models.
+
+* Implementation of Lazy Predict, library to easily explore many ML models:
+https://lazypredict.readthedocs.io/en/latest/installation.html
+
+"""
+clf = LazyClassifier(verbose=0,
+                     ignore_warnings=True,
+                     custom_metric=None,
+                     predictions=False,
+                     random_state=12,
+                     classifiers='all')
+
+models, predictions = clf.fit(X_train , X_test , y_train , y_test)
+clear_output()
+models[:15]
+"""
+
+* Nice visualization for Features importance, using many folds of the same model:
+
+"""
+# Collect data:
+lgb_fimp = []
+fim = pd.DataFrame(index=LGBM_FEATURES,
+                 data=model.feature_importances_,
+                 columns=[f'{fold}_importance'])
+    lgb_fimp.append(fim)
+# Plot:
+lgbm_fis_df = pd.concat(lgb_fimp, axis=1).head(15)
+lgbm_fis_df.sort_values('1_importance').plot(kind='barh', figsize=(15, 10),
+                                       title='Feature Importance Across Folds')
+plt.show()
+"""
+
+* Great interactive plots using:
+
+import seaborn as sns
+import plotly.express as px
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+[Missing values counts per row and dataset:]
+"""
+fig = make_subplots(rows=1, 
+                    cols=2,
+                    column_titles = ["Train Data", "Test Data"] ,
+                    x_title="Missing Values")
+
+fig.add_trace(go.Bar(x=train_null[0],
+                     y=train_null.index,
+                     orientation="h",
+                    marker=dict(color=[n for n in range(12)], 
+                                line_color='rgb(0,0,0)' , 
+                                line_width = 2,
+                                coloraxis="coloraxis")),
+              1, 1)
+fig.add_trace(go.Bar(x=test_null[0], 
+                     y=test_null.index,
+                     orientation="h",
+                    marker=dict(color=[n for n in range(12)], 
+                                line_color='rgb(0,0,0)', 
+                                line_width = 2,
+                                coloraxis="coloraxis")),
+              1, 2)
+
+fig.update_layout(showlegend=False, title_text="Column wise Null Value Distribution", title_x=0.5)
+"""
+
+[Vertical bar plot]
+"""
+fig = make_subplots(rows=1, 
+                    cols=2,
+                    column_titles = ["Train Data", "Test Data"] ,
+                    x_title="Missing Values",)
+
+fig.add_trace(go.Bar(x=missing_train_row["no"], 
+                     y=missing_train_row["count"]  ,
+                    marker=dict(color=[n for n in range(4)], 
+                                line_color='rgb(0,0,0)' ,
+                                line_width = 3
+                                ,coloraxis="coloraxis")),
+              1, 1)
+fig.add_trace(go.Bar(x= missing_test_row["no"], 
+                     y=missing_test_row["count"],
+                    marker=dict(color=[n for n in range(4)], 
+                                line_color='rgb(0,0,0)',
+                                line_width = 3 ,
+                                coloraxis="coloraxis")),
+              1, 2)
+fig.update_layout(showlegend=False, title_text="Row wise Null Value Distribution", title_x=0.5)
+"""
+
+[Pie chart]
+"""
+fig = go.Figure(data=[go.Pie(
+    labels=labels, 
+    values=values, pull=[0.1, 0, 0 ],
+    marker=dict(colors=colors, 
+                line=dict(color='#000000', 
+                          width=2))
+)])
+fig.show()
+"""
+
+[Histogram]
+"""
+ageDf = pd.concat([train_age, test_age])
+fig = px.histogram(data_frame = ageDf, 
+                   x="Age",
+                   color= "type",
+                   color_discrete_sequence =  ['#58D68D','#DE3163'],
+                   marginal="box",
+                   nbins= 100,
+                    template="plotly_white"
+                )
+fig.update_layout(title = "Distribution of Age" , title_x = 0.5)
+fig.show()
+"""
+
+[Correlation matrix]
+"""
+fig = px.imshow(train.corr() ,text_auto=True, aspect="auto" , color_continuous_scale = "viridis")
+fig.show()
+"""
+
+[Line-scatter plot]
+"""
+line = px.line(data_frame= models ,y =["Accuracy"] , markers = True)
+line.update_xaxes(title="Model",
+              rangeslider_visible = False)
+line.update_yaxes(title = "Accuracy")
+line.update_traces(line_color="red")
+line.update_layout(showlegend = True,
+    title = {
+        'text': 'Accuracy vs Model',
+        'y':0.94,
+        'x':0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'})
+
+line.show()
+"""
+
+========= ========= =========
+========= ========= =========
+========= ========= =========
+
+Comment on Notebook (2024-08-31):
+
+Thanks for sharing Sanskar. Wonderful plots and great implementation of Lazy Predict! It's a great way to start exploring the problem and the expected accuracy in the solutions. I'll implement many of the tools that you've provided here in my notebooks.
+I may add, based in my experience working with small datasets, that although training results are useful and set the maximum expectation (underfitting is very rare), they should always be compared with the submission results or a similar validation dataset. It's very likely that models overfit the data and usually the best model is not the one with the best training result!
