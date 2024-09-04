@@ -1,0 +1,49 @@
+Spaceship Titanic - NOTES about kagglers' notebooks
+
+========= ========= =========
+========= ========= =========
+========= ========= =========
+
+[Minato Namizake] Space Titanic| EDA|Advanced Feature Engineering
+https://www.kaggle.com/code/arunklenin/space-titanic-eda-advanced-feature-engineering
+
+*** GENERAL ***
+
+- Very nice format for tables:
+
+"""
+from prettytable import PrettyTable
+
+table = PrettyTable()
+
+table.field_names = ['Column Name', 'Data Type', 'Non-Null Count']
+for column in train.columns:
+    data_type = str(train[column].dtype)
+    non_null_count = train[column].count()
+    table.add_row([column, data_type, non_null_count])
+print(table)
+"""
+
+- Pair plot, from seaborn, is a nice way to visualize pair-correlations:
+
+"""
+import seaborn as sns
+sns.pairplot(data=train, vars=cont_cols, hue='Transported')
+plt.show()
+"""
+
+*** FEATURE ANALYSIS ***
+
+Quote, when analyzing numerical features Age and expenses:
+""
+Distributions between both the classes [True or False transported classes?] tell us that using these features directly into model would hinder the performance. These are the things that we could try:
+
+- Create Bins
+- Use algorithms that are unaffected by outliers
+""
+
+==============================
+
+CONTINUE READING:
+
+4. DATA CLEANING
