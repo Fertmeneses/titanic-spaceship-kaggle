@@ -44,6 +44,344 @@ Distributions between both the classes [True or False transported classes?] tell
 
 ==============================
 
-CONTINUE READING:
-
 4. DATA CLEANING
+
+There is a commented algorithm for imputing missing values using random forest estimators. Check his other notebook about CatBoost Imputer:
+
+https://www.kaggle.com/code/arunklenin/ps3e15-iterative-catboost-imputer-ensemble?scriptVersionId=130271409
+
+CATEGORICAL FEATURES:
+=============================================
+"""
+for feature in miss_cat:
+    train[feature].fillna("missing_"+feature,inplace=True)
+    test[feature].fillna("missing_"+feature,inplace=True)
+    
+# Calculate the missing percentages for both train and test data
+train_missing_pct = train[miss_cat].isnull().mean() * 100
+test_missing_pct = test[miss_cat].isnull().mean() * 100
+
+# Combine the missing percentages for train and test data into a single dataframe
+missing_pct_df = pd.concat([train_missing_pct, test_missing_pct], axis=1, keys=['Train %', 'Test%'])
+
+# Print the missing percent
+print(missing_pct_df)
+
+# cat_params={
+#             'depth': 7,
+#             'learning_rate': 0.1,
+#             'l2_leaf_reg': 0.7,
+#             'random_strength': 0.2,
+#             'max_bin': 200,
+#             'od_wait': 65,
+#             'one_hot_max_size': 70,
+#             'grow_policy': 'Depthwise',
+#             'bootstrap_type': 'Bayesian',
+#             'od_type': 'Iter',
+#             'eval_metric': 'MultiClass',
+#             'loss_function': 'MultiClass',
+# }
+# def store_missing_rows(df, features):
+#     missing_rows = {}
+    
+#     for feature in features:
+#         missing_rows[feature] = df[df[feature].isnull()]
+    
+#     return missing_rows
+
+
+# def fill_missing_categorical(train,test,target, features, max_iterations=10):
+    
+#     df=pd.concat([train.drop(columns=[target,"PassengerId"]),test.drop(columns=['PassengerId'])],axis="rows")
+#     df=df.reset_index(drop=True)
+    
+#     # Step 1: Store the instances with missing values in each feature
+#     missing_rows = store_missing_rows(df, features)
+    
+#     # Step 2: Initially fill all missing values with "Missing"
+#     for f in features:
+#         df[f]=df[f].fillna("Missing_"+f)
+# #     df[features] = df[features].fillna("Missing")
+    
+#     for iteration in tqdm(range(max_iterations), desc="Iterations"):
+#         for feature in features:
+#             # Skip features with no missing values
+#             rows_miss = missing_rows[feature].index
+            
+#             missing_temp = df.loc[rows_miss].copy()
+#             non_missing_temp = df.drop(index=rows_miss).copy()
+#             missing_temp = missing_temp.drop(columns=[feature])
+            
+#             cat_features = [x for x in df.columns if df[x].dtype=="O" and x != feature]
+            
+#             # Step 3: Use the remaining features to predict missing values using Random Forests
+#             X_train = non_missing_temp.drop(columns=[feature])
+#             y_train = non_missing_temp[[feature]]
+            
+#             catboost_classifier = CatBoostClassifier(**cat_params)
+#             catboost_classifier.fit(X_train, y_train, cat_features=cat_features, verbose=False)
+            
+#             # Step 4: Predict missing values for the feature and update all N features
+#             y_pred = catboost_classifier.predict(missing_temp)
+#             df.loc[rows_miss, feature] = y_pred
+#     train[features] = np.array(df.iloc[:train.shape[0]][features])
+#     test[features] = np.array(df.iloc[train.shape[0]:][features])
+    
+#     return train,test
+
+
+# train ,test= fill_missing_categorical(train,test,"Transported",miss_cat,10)
+"""
+=============================================
+
+NUMERICAL FEATURES:
+
+=============================================
+
+"""
+# cb_params = {
+#             'iterations': 500,
+#             'depth': 6,
+#             'learning_rate': 0.02,
+#             'l2_leaf_reg': 0.5,
+#             'random_strength': 0.2,
+#             'max_bin': 150,
+#             'od_wait': 80,
+#             'one_hot_max_size': 70,
+#             'grow_policy': 'Depthwise',
+#             'bootstrap_type': 'Bayesian',
+#             'od_type': 'IncToDec',
+#             'eval_metric': 'RMSE',
+#             'loss_function': 'RMSE',
+#             'random_state': 42,
+#         }
+# def rmse(y1,y2):
+#     return(np.sqrt(mean_squared_error(y1,y2)))
+
+# def fill_missing_numerical(train,test,target, features, max_iterations=10):
+    
+#     df=pd.concat([train.drop(columns=[target,"PassengerId"]),test.drop(columns="PassengerId")],axis="rows")
+#     df=df.reset_index(drop=True)
+    
+#     # Step 1: Store the instances with missing values in each feature
+#     missing_rows = store_missing_rows(df, features)
+    
+#     # Step 2: Initially fill all missing values with "Missing"
+#     for f in features:
+#         df[f]=df[f].fillna(df[f].mean())
+    
+#     cat_features=[f for f in df.columns if df[f].dtype=="O"]
+#     dictionary = {feature: [] for feature in features}
+    
+#     for iteration in tqdm(range(max_iterations), desc="Iterations"):
+#         for feature in features:
+#             # Skip features with no missing values
+#             rows_miss = missing_rows[feature].index
+            
+#             missing_temp = df.loc[rows_miss].copy()
+#             non_missing_temp = df.drop(index=rows_miss).copy()
+#             y_pred_prev=missing_temp[feature]
+#             missing_temp = missing_temp.drop(columns=[feature])
+            
+            
+#             # Step 3: Use the remaining features to predict missing values using Random Forests
+#             X_train = non_missing_temp.drop(columns=[feature])
+#             y_train = non_missing_temp[[feature]]
+            
+#             catboost_classifier = CatBoostRegressor(**cb_params)
+#             catboost_classifier.fit(X_train, y_train,cat_features=cat_features, verbose=False)
+            
+#             # Step 4: Predict missing values for the feature and update all N features
+#             y_pred = catboost_classifier.predict(missing_temp)
+#             df.loc[rows_miss, feature] = y_pred
+#             error_minimize=rmse(y_pred,y_pred_prev)
+#             dictionary[feature].append(error_minimize)  # Append the error_minimize value
+
+#     for feature, values in dictionary.items():
+#         iterations = range(1, len(values) + 1)  # x-axis values (iterations)
+#         plt.plot(iterations, values, label=feature)  # plot the values
+#         plt.xlabel('Iterations')
+#         plt.ylabel('RMSE')
+#         plt.title('Minimization of RMSE with iterations')
+#         plt.legend()
+#         plt.show()
+#     train[features] = np.array(df.iloc[:train.shape[0]][features])
+#     test[features] = np.array(df.iloc[train.shape[0]:][features])
+
+#     return train,test
+
+
+# train,test = fill_missing_numerical(train,test,"Transported",miss_cont,20)
+"""
+
+=============================================
+
+Elegant way to sum all expenditure features, and then to apply conditions for the DataFrame:
+
+"""
+# First lets fill CryoSleep, based on totdal expenditure
+exp_features=['RoomService', 'FoodCourt', 'ShoppingMall', 'Spa', 'VRDeck']
+train["Expenditure"]=train[exp_features].sum(axis="columns")
+test["Expenditure"]=test[exp_features].sum(axis="columns")
+
+# Zero expenditure indicate that they are in CryoSleep
+train['CryoSleep']=np.where(train['Expenditure']==0,1,0)
+test['CryoSleep']=np.where(test['Expenditure']==0,1,0)
+
+# Also, if they are VIPs, they probably would not choose to be in CryoSleep
+train['VIP']=np.where(train['CryoSleep']==0,1,0)
+test['VIP']=np.where(test['CryoSleep']==0,1,0)
+
+train.drop(columns=["Expenditure"],inplace=True)
+test.drop(columns=["Expenditure"],inplace=True)
+"""
+
+==============================
+
+5. SCALING/TRANSFORMING DATA
+
+He proposes a very interesting strategy to scale/transform the NUMERICAL data:
+
+a) Define many transformations such as 'log', 'sqrt', etc.
+b) One by one, apply a single transformation to a single feature and train a ML model to predict the target "Transported", using all other features as normal and the transformed feature. Record the accuracy for each transformation.
+c) For each feature, select the best performing transformation according to the ML model.
+
+Code:
+
+"""
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler,PowerTransformer, FunctionTransformer
+from sklearn.decomposition import PCA
+from sklearn.decomposition import TruncatedSVD
+from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split,cross_val_score
+from sklearn import metrics
+from sklearn.metrics import mean_squared_error,mean_squared_log_error, roc_auc_score, accuracy_score, f1_score, precision_recall_curve, log_loss
+
+# Below are the functions to decide the decision boundaries in order to maximize Accuracy/ f1-score
+def f1_cutoff(precisions, recalls, thresholds):
+    a=precisions*recalls/(recalls+precisions)
+    b=sorted(zip(a,thresholds))
+    return b[-1][1]
+def acc_cutoff(y_valid, y_pred_valid):
+    y_valid=np.array(y_valid)
+    y_pred_valid=np.array(y_pred_valid)
+    fpr, tpr, threshold = metrics.roc_curve(y_valid, y_pred_valid)
+    pred_valid = pd.DataFrame({'label': y_pred_valid})
+    thresholds = np.array(threshold)
+    pred_labels = (pred_valid['label'].values > thresholds[:, None]).astype(int)
+    acc_scores = (pred_labels == y_valid).mean(axis=1)
+    acc_df = pd.DataFrame({'threshold': threshold, 'test_acc': acc_scores})
+    acc_df.sort_values(by='test_acc', ascending=False, inplace=True)
+    cutoff = acc_df.iloc[0, 0]
+    return cutoff
+    
+sc=MinMaxScaler()
+unimportant_features=[]
+table = PrettyTable()
+dt_params= {'min_samples_split': 80, 'min_samples_leaf': 30, 'max_depth': 8, 'criterion': 'absolute_error'}
+
+table.field_names = ['Original Feature', 'Original Accuracy(CV-TRAIN)', 'Transformed Feature', 'Tranformed Accuracy(CV-TRAIN)']
+for col in num_feat:
+    
+    # Log Transformation after MinMax Scaling(keeps data between 0 and 1)
+    train["log_"+col]=np.log1p(sc.fit_transform(train[[col]]))
+    test["log_"+col]=np.log1p(sc.transform(test[[col]]))
+    
+    # Square Root Transformation
+    train["sqrt_"+col]=np.sqrt(sc.fit_transform(train[[col]]))
+    test["sqrt_"+col]=np.sqrt(sc.transform(test[[col]]))
+    
+    # Box-Cox transformation
+    transformer = PowerTransformer(method='box-cox')
+    train["bx_cx_"+col] = transformer.fit_transform(sc.fit_transform(train[[col]])+1) # adjusted to make it +ve
+    test["bx_cx_"+col] = transformer.transform(sc.transform(test[[col]])+1)
+    
+    # Yeo-Johnson transformation
+    transformer = PowerTransformer(method='yeo-johnson')
+    train["y_J_"+col] = transformer.fit_transform(train[[col]])
+    test["y_J_"+col] = transformer.transform(test[[col]])
+    
+    # Power transformation, 0.25
+    power_transform = lambda x: np.power(x, 0.25) 
+    transformer = FunctionTransformer(power_transform)
+    train["pow_"+col] = transformer.fit_transform(sc.fit_transform(train[[col]]))
+    test["pow_"+col] = transformer.transform(sc.transform(test[[col]]))
+    
+    # Power transformation, 0.1
+    power_transform = lambda x: np.power(x, 0.1) 
+    transformer = FunctionTransformer(power_transform)
+    train["pow2_"+col] = transformer.fit_transform(sc.fit_transform(train[[col]]))
+    test["pow2_"+col] = transformer.transform(sc.transform(test[[col]]))
+    
+    # log to power transformation
+    train["log_pow2"+col]=np.log1p(train["pow2_"+col])
+    test["log_pow2"+col]=np.log1p(test["pow2_"+col])
+    
+    temp_cols=[col,"log_"+col,"sqrt_"+col, "bx_cx_"+col,"y_J_"+col ,"pow_"+col,"pow2_"+col,"log_pow2"+col ]
+    
+    # Fill na becaue, it would be Nan if the vaues are negative and a transformation applied on it
+    train[temp_cols]=train[temp_cols].fillna(0)
+    test[temp_cols]=test[temp_cols].fillna(0)
+    
+    #Apply PCA on  the features and compute an additional column
+    pca=TruncatedSVD(n_components=1)
+    x_pca_train=pca.fit_transform(train[temp_cols])
+    x_pca_test=pca.transform(test[temp_cols])
+    x_pca_train=pd.DataFrame(x_pca_train, columns=[col+"_pca_comb"])
+    x_pca_test=pd.DataFrame(x_pca_test, columns=[col+"_pca_comb"])
+    temp_cols.append(col+"_pca_comb")
+    #print(temp_cols)
+    
+    train=pd.concat([train,x_pca_train],axis='columns')
+    test=pd.concat([test,x_pca_test],axis='columns')
+    
+    # See which transformation along with the original is giving you the best univariate fit with target
+    kf=KFold(n_splits=10, shuffle=True, random_state=42)
+    
+    ACC=[]
+    
+    for f in temp_cols:
+        X=train[[f]].values
+        y=train["Transported"].values
+        
+        acc=[]
+        for train_idx, val_idx in kf.split(X,y):
+            X_train,y_train=X[train_idx],y[train_idx]
+            x_val,y_val=X[val_idx],y[val_idx]
+            
+            model=LogisticRegression()
+#             model=DecisionTreeRegressor(**dt_params)
+            model.fit(X_train,y_train)
+            y_pred=model.predict_proba(x_val)[:,1]
+            precisions,recalls, thresholds=precision_recall_curve(y_val,y_pred)
+#             cutoff=f1_cutoff(precisions,recalls, thresholds)
+            cutoff=acc_cutoff(y_val,y_pred)
+#             print(cutoff)
+            predicted =pd.DataFrame()
+            predicted["Transported"] = y_pred
+            y_pred=np.where(predicted["Transported"]>float(cutoff),1,0)
+            acc.append(accuracy_score(y_val,y_pred))
+        ACC.append((f,np.mean(acc)))
+        if f==col:
+            orig_acc=np.mean(acc)
+    best_col, best_acc=sorted(ACC, key=lambda x:x[1], reverse=True)[0]
+    
+    cols_to_drop = [f for f in temp_cols if  f!= best_col]
+#     print(cols_to_drop)
+    final_selection=[f for f in temp_cols if f not in cols_to_drop]
+    if cols_to_drop:
+        unimportant_features=unimportant_features+cols_to_drop
+    table.add_row([col,orig_acc,best_col ,best_acc])
+print(table)    
+"""
+
+To transform CATEGORIAL features, there are many techniques.
+
+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+
+CONTINUE READING AT:
+
+5.2 CATEGORICAL FEATURES.
