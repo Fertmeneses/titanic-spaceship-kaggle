@@ -379,9 +379,27 @@ print(table)
 
 To transform CATEGORIAL features, there are many techniques.
 
+In Section 5.8 (Feature Selection), there is an interesting PCA analysis to filter the most important feature within a subset, in which all features share the same parent. For example, a subset [Age, Age_log, Age_sqrt, ...].
+
 =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 
-CONTINUE READING AT:
+Implemented ML models:
 
-5.2 CATEGORICAL FEATURES.
+- ANN (deep learning): Dense_64 + Dense_16 + Dense_Final_1
+- XGBoost + RandomizedSearchCV
+- LightGBM + RandomizedSearchCV
+- CatBoostClassifier + RandomizedSearchCV
+- Logistic + GridSearchCV
+- Random Forests + RandomizedSearchCV
+- HistGBM + RandomizedSearchCV
+- GradientBoostingClassifier + RandomizedSearchCV
+- SVC + RandomizedSearchCV
+- KNN + RandomizedSearchCV
+- MLPClassifier + RandomizedSearchCV
+- GaussianProcessClassifier + RandomizedSearchCV
+- ExtraTrees + RandomizedSearchCV
+- DecisionTrees + RandomizedSearchCV
+- AdaBoost + RandomizedSearchCV
+- Naive Bayes + RandomizedSearchCV
+
