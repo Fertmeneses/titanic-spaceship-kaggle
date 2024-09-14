@@ -1,0 +1,158 @@
+Spaceship Titanic - NOTES about kagglers' notebooks
+
+========= ========= =========
+========= ========= =========
+========= ========= =========
+
+[Na K] Spaceship Titanic naresh
+https://www.kaggle.com/code/nakkaggle/spaceship-titanic-naresh
+
+*** GENERAL ***
+
+The code is not very well documented/formatted, and feature engineering is very simple. However, their explain their train of thoughts and account for their experimentation.
+The submission result with one of their best models (according to their code) is 0.80289.
+
+Data correction is implemented by KNN imputation.
+
+Instead of presenting a Correlation Matrix, he uses a Transported-Correlation table, which looks really nice:
+
+"""
+correlation = pd.concat([X_train, y_train], axis=1).corr().Transported.abs().values[:-1]
+mutual_info = mutual_info_regression(X_train, y_train, random_state=SEED) 
+associations = {'correlation': correlation, 'mutual_info': mutual_info} 
+associations = pd.DataFrame(associations, index=X_train.columns).sort_values(by='correlation', ascending=False)
+display(associations.style.background_gradient() )
+"""
+
+*** DATA PRE-PROCESSING BEFORE ML ***
+
+- They apply OHE to object features.
+
+- They tried to apply Dimensionality reduction using PCA, by "PCA is adversely affecting performance in all my trials with it, so excluding it".
+
+- They normalize data with RobustScaler.
+
+*** MACHINE LEARNING ***
+
+- They experimented with TPOTClassifier ("intelligent search over machine learning pipelines"), but "TPOT returned various tuned versions of RandomForestClassifier, none of which gave a competition accuuracy score of more than 77% (much less than the score achieved by other models in this Notebook) so I didn't pursue it any further".
+
+- They tried the following models, with [rs = dict(random_state=SEED)]:
+
+* LogisticRegression(max_iter=200)
+* SVC(probability=True, **rs)
+* KNeighborsClassifier()
+* DecisionTreeClassifier(**rs)
+* RandomForestClassifier(**rs)
+* AdaBoostClassifier(**rs)
+* MLPClassifier(max_iter=200, **rs)
+* GaussianNB()
+
+* GradientBoostingClassifier(**rs)
+* GradientBoostingClassifier(learning_rate=0.05, max_depth=7, max_features='log2', n_estimators=154, subsample=0.55, **rs)
+* GradientBoostingClassifier(subsample=0.9, **rs)
+* GradientBoostingClassifier(max_depth=7, max_features='sqrt', n_estimators=600, n_iter_no_change=50, tol=0, subsample=0.75, learning_rate=0.05, validation_fraction=0.2, verbose=0, random_state=SEED)
+
+* RandomForestClassifier(bootstrap=False, criterion='entropy', max_features=0.5, min_samples_leaf=17, min_samples_split=12, n_estimators=100, **rs)
+* RandomForestClassifier(bootstrap=True, criterion='entropy', max_features=0.65, min_samples_leaf=8, min_samples_split=19, n_estimators=100, **rs)
+* RandomForestClassifier(bootstrap=True, criterion='entropy', max_features=0.95, min_samples_leaf=15, min_samples_split=7, n_estimators=100, **rs)
+
+* XGBClassifier(**rs)
+
+* LGBMClassifier(**rs)
+* LGBMClassifier(**rs, n_estimators=600, learning_rate=0.05, metric='binary_logloss')
+"""
+
+They conclude that GradientBoostingClassifier performs bets:
+
+"Based on the observations in our above trials, although LGBMClassifier shows similar metrics as GradientBoostingClassifier, in the actual submissions GradientBoostingClassifier has consistently outperformed other models, so I have tried to improve this algorithm via hyperparameters-tuning. We will continue adding more models to our lists of models to compare performance as we keep improving our models"
+
+Then, they optimize hyperparamaters using RandomizedSearchCV:
+
+"In separate runs of RandomizedSearchCV, I found following to be the best performing model configurations: 
+
+GradientBoostingClassifier(
+max_depth=7,
+n_estimators=154,
+learning_rate=0.05,
+max_features='log2',
+subsample=0.55, 
+random_state=SEED
+) , 
+
+GradientBoostingClassifier(
+max_depth=7, 
+n_estimators=600, 
+learning_rate=0.05, 
+max_features='sqrt', 
+subsample=0.75, 
+n_iter_no_change=50, 
+tol=0, 
+validation_fraction=0.2, 
+random_state=SEED) , 
+
+GradientBoostingClassifier(
+max_depth=5, 
+n_estimators=300, 
+learning_rate=0.1, 
+max_features='sqrt', 
+subsample=0.75, 
+n_iter_no_change=25, 
+tol=0,
+validation_fraction=0.2, 
+random_state=SEED) 
+"
+
+They address overfitting by training the same model in different sets of training/validation datasets and performing soft voting:
+
+"
+I split the full training set into multiple training and validation sets using StratifiedKFold, or StratifiedShuffleSplit, 
+and then used the training split for fitting, validation split to minimize model loss, 
+and then used this trained model to make predictions on the test set. 
+
+I obtained multiple predictions on test set this way and then used 
+soft-voting (averaging prediction probabilities) to get average prediction probability for each record, which I have 
+eventually used in my model submission. 
+
+In my trials, I noticed that soft-voting this way gave better prediction 
+scores on kaggle submissions than hard-voting. 
+
+This approach has worked well most of the times with the submission 
+based on averages giving better kaggle score than any of the individual set of generated predictions. 
+"
+
+"""
+# Training:
+
+pred_dict = dict()
+n_splits = 5
+
+sss = StratifiedShuffleSplit(n_splits=n_splits, test_size=0.2, random_state=SEED,) 
+
+for i, (tr_ids, ts_ids) in enumerate(sss.split(X_train_full, y_train_full)): 
+    model = LGBMClassifier(random_state=SEED+i, n_estimators=600, learning_rate=0.05, metric='binary_logloss',) 
+    model = model.fit(X_train_full[tr_ids], y_train_full[tr_ids], early_stopping_rounds=50, eval_set=[(X_train_full[ts_ids], y_train_full[ts_ids])], verbose=0) 
+    # scoring:
+    print(i, 'best_iteration', model._best_iteration)
+    print(i, 'log_loss', log_loss(y_train_full[ts_ids], model.predict_proba(X_train_full[ts_ids])[:,1]))
+    print(i, 'accuracy', model.score(X_train_full[ts_ids], y_train_full[ts_ids]), '\n')
+    # predict on test set:
+    pred_dict['lgb_'+str(i)] = model.predict_proba(X_test)[:, 1] 
+
+# Comparison:
+
+    predict_frame = pd.DataFrame(pred_dict)
+    predict_frame['lgb_avg'] = predict_frame.iloc[:,-n_splits:].mean(axis=1) # soft voting gives better results than hard voting 
+    # predict_frame['gb_avg'] = predict_frame.median(axis=1) # hard voting  
+    print(predict_frame.describe()) 
+
+    y_test_pred = np.round(predict_frame['lgb_avg'].values)  
+    y_test_pred = np.round(predict_frame['lgb_0'].values)  
+    print(y_test_pred[:5]) 
+    print(np.mean(y_test_pred)) 
+
+# Submission:
+
+submission = pd.DataFrame(dict(PassengerId = test.PassengerId, Transported = y_test_pred))
+submission.Transported = submission.Transported.astype('bool')
+submission.to_csv('submission.csv', index=False)
+"""
