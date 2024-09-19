@@ -3,3 +3,7 @@ IDEAS FOR MACHINE LEARNING IN TITANIC SPACESHIP
 * For the binary classification problem, consider all the main available evaluation methods (Accuracy, Precision, Recall and F1-score) and choose the more appropriate (Accuracy?)
 
 * Implement the confusion matrix when evaluating the ML model.
+
+IDEAS FOR DATA EDITION
+
+* Explore a few rows using random choices.
