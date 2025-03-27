@@ -29,8 +29,10 @@ XGBClassifier,300,2,-1,0.8447,0.80102,XGBC_n300_d2_C
 XGBClassifier,150,3,-1,0.8639,0.79915,XGBC_n150_d3_C
 XGBClassifier,100,3,-1,0.8483,0.79985,XGBC_n100_d3_C
 XGBClassifier,50,3,-1,0.8296,0.80243,XGBC_n50_d3_C
-XGBClassifier,30,2,-1,0.8208,,XGBC_n30_d3_C
-XGBClassifier,120,3,-1,,,
-XGBClassifier,130,2,-1,,,
-XGBClassifier,70,4,-1,,,
-XGBClassifier,20,4,-1,,,
+XGBClassifier,40,3,-1,0.8261,0.8043,XGBC_n40_d3_C
+XGBClassifier,35,3,-1,0.8246,0.80126,XGBC_n35_d3_C
+XGBClassifier,30,3,-1,0.8208,0.79962,XGBC_n30_d3_C
+XGBClassifier,30,4,-1,0.8332,0.80056,XGBC_n30_d4_C
+XGBClassifier,40,4,-1,0.8427,0.80196,XGBC_n40_d4_C
+XGBClassifier,50,4,-1,0.8464,0.80243,XGBC_n50_d4_C
+XGBClassifier,60,4,-1,0.853,0.80032,XGBC_n60_d4_C
