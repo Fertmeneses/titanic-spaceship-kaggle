@@ -1,0 +1,11 @@
+Model,n_estimators,max_depth,n_neighbors,train_score,subm_score,name
+GradientBoostingClassifier,80,4,-1,0.8422,0.80406,GBC_n80_d4_E
+GradientBoostingClassifier,90,4,-1,0.8444,0.80336,GBC_n90_d4_E
+GradientBoostingClassifier,70,4,-1,0.8372,0.80149,GBC_n70_d4_E
+GradientBoostingClassifier,85,4,-1,0.8423,0.80453,GBC_n85_d4_E
+GradientBoostingClassifier,200,3,-1,0.8431,,GBC_n200_d3_E
+,,,,,,
+,,,,,,
+,,,,,,
+GradientBoostingClassifier,45,5,-1,0.8477,,GBC_n45_d5_E
+XGBClassifier,80,4,-1,0.8655,0.79775,GBC_n80_d4_E
