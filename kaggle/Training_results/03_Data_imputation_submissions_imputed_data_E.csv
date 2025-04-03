@@ -13,7 +13,12 @@ GradientBoostingClassifier,55,5,-1,0.8525,0.80243,GBC_n55_d5_E
 GradientBoostingClassifier,65,5,-1,0.8595,0.80313,GBC_n65_d5_E
 GradientBoostingClassifier,75,5,-1,0.8643,0.80009,GBC_n75_d5_E
 GradientBoostingClassifier,60,5,-1,0.8571,0.8043,GBC_n60_d5_E
-GradientBoostingClassifier,62,5,-1,0.8587,,GBC_n62_d5_E
-,,,,,,
-,,,,,,
+GradientBoostingClassifier,62,5,-1,0.8587,0.80289,GBC_n62_d5_E
 XGBClassifier,80,4,-1,0.8655,0.79775,GBC_n80_d4_E
+XGBClassifier,50,4,-1,0.8508,0.79845,XGBC_n50_d4_E
+XGBClassifier,25,4,-1,0.828,0.79962,XGBC_n25_d4_E
+XGBClassifier,25,5,-1,0.8459,0.79892,XGBC_n25_d5_E
+XGBClassifier,25,3,-1,0.8121,0.79635,XGBC_n25_d3_E
+XGBClassifier,125,3,-1,0.8585,0.79541,XGBC_n125_d3_E
+XGBClassifier,200,3,-1,0.8738,0.79309,XGBC_n200_d3_E
+XGBClassifier,200,4,-1,0.9179,0.79565,XGBC_n200_d4_E
